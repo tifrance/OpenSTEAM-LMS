@@ -140,7 +140,7 @@ $('input[type=radio][name=isEval-activity-form]').change(function () {
         contentParsed = "";
 
     if (id != 0) {
-        activity= Main.getClassroomManager()._myTeacherActivities.filter(x => x.id == id)[0];
+        activity = Main.getClassroomManager()._myTeacherActivities.filter(x => x.id == id)[0];
         contentParsed = JSON.parse(activity.content);
     }
 
@@ -217,9 +217,9 @@ function backToClassroomFromCode() {
 function askQuitLtiWithoutSaving() {
     return new Promise((resolve, reject) => {
         const modalElt = document.querySelector('#quit-lti-activity-modal'),
-        modalCloseButtonElt = modalElt.querySelector('.vitta-modal-exit-btn'),
-        modalYesButtonElt = document.querySelector('#quit-lti-yes-button'),
-        modalNoButtonElt = document.querySelector('#quit-lti-no-button');
+            modalCloseButtonElt = modalElt.querySelector('.vitta-modal-exit-btn'),
+            modalYesButtonElt = document.querySelector('#quit-lti-yes-button'),
+            modalNoButtonElt = document.querySelector('#quit-lti-no-button');
         pseudoModal.openModal('quit-lti-activity-modal');
         new ActivityTracker().setIsCheckingLti(true);
         const removeListeners = () => {
@@ -229,14 +229,46 @@ function askQuitLtiWithoutSaving() {
             pseudoModal.closeModal('quit-lti-activity-modal');
             new ActivityTracker().setIsCheckingLti(false);
         }
-        const quitCallback = () => { 
-            resolve(true); 
+        const quitCallback = () => {
+            resolve(true);
             removeListeners();
         };
-        const stayCallback = () => { 
-            resolve(false); 
+        const stayCallback = () => {
+            resolve(false);
             removeListeners();
         };
+        modalYesButtonElt.addEventListener('click', quitCallback);
+        modalNoButtonElt.addEventListener('click', stayCallback);
+        modalCloseButtonElt.addEventListener('click', stayCallback);
+    });
+}
+
+
+function askQuitSandboxWithoutSaving() {
+    return new Promise((resolve, reject) => {
+        const modalElt = document.querySelector('#quit-sandbox-activity-modal'),
+            modalCloseButtonElt = modalElt.querySelector('.vitta-modal-exit-btn'),
+            modalYesButtonElt = document.querySelector('#quit-sandbox-yes-button'),
+            modalNoButtonElt = document.querySelector('#quit-sandbox-no-button');
+        new Modal("a").openModal('quit-sandbox-activity-modal').openModal('quit-sandbox-activity-modal');
+
+        const removeListeners = () => {
+            modalYesButtonElt.removeEventListener('click', quitCallback);
+            modalNoButtonElt.removeEventListener('click', stayCallback);
+            modalCloseButtonElt.removeEventListener('click', stayCallback);
+            new Modal("a").openModal('quit-sandbox-activity-modal').closeModal('quit-sandbox-activity-modal');
+        }
+
+        const quitCallback = () => {
+            resolve(true);
+            removeListeners();
+        };
+
+        const stayCallback = () => {
+            resolve(false);
+            removeListeners();
+        };
+
         modalYesButtonElt.addEventListener('click', quitCallback);
         modalNoButtonElt.addEventListener('click', stayCallback);
         modalCloseButtonElt.addEventListener('click', stayCallback);
@@ -253,19 +285,20 @@ function askQuitLtiWithoutSaving() {
  * @param {boolean} isOnpopstate - If set to true, the current navigation won't be saved in history (dedicated to onpopstate events)
  */
 async function navigatePanel(id, idNav, option = "", interface = '', isOnpopstate = false) {
+    notifyA11y("Navigation");
     document.title = $('#' + idNav).find('span').html() + ' - ' + location.hostname.charAt(0).toUpperCase() + location.hostname.slice(1);
 
     // If we are on the activity panel, in LTI context and the LTI resource isn't up to date
     const isActivityPanel = $_GET('panel') === 'classroom-dashboard-activity-panel',
-    isNewActivityPanel = $_GET('panel') === 'classroom-dashboard-classes-new-activity';
+        isNewActivityPanel = $_GET('panel') === 'classroom-dashboard-classes-new-activity';
 
     const isLtiActivity = isActivityPanel && Activity.isLti,
-    isLtiNewActivity = isNewActivityPanel && Main.getClassroomManager().getActivityIsLti(),
-    isStudentLtiActivity = UserManager.getUser().isRegular 
-        ? false
-        : Activity.activity
-            ? isActivityPanel && Activity.activity.isLti
-            : false;
+        isLtiNewActivity = isNewActivityPanel && Main.getClassroomManager().getActivityIsLti(),
+        isStudentLtiActivity = UserManager.getUser().isRegular
+            ? false
+            : Activity.activity
+                ? isActivityPanel && Activity.activity.isLti
+                : false;
 
     const isLti = isLtiActivity || isLtiNewActivity || isStudentLtiActivity;
 
@@ -273,6 +306,16 @@ async function navigatePanel(id, idNav, option = "", interface = '', isOnpopstat
         const quitLti = await askQuitLtiWithoutSaving();
         if (!quitLti) return;
     }
+
+    /*     
+    const isIDEPanel = $_GET('panel') === 'classroom-dashboard-ide-panel';
+    const isNavInludesInterface = $_GET('interface') !== undefined;
+
+    if (isIDEPanel && isNavInludesInterface) {
+        const quitSandbox = await askQuitSandboxWithoutSaving();
+        if (!quitSandbox) return;
+    } 
+    */
 
     breadcrumbManager.navigatePanelBreadcrumb(idNav, id, $_GET('nav'), $_GET('panel'));
     // If there is any working activity tracker, send the tracking data and stop it
@@ -287,7 +330,7 @@ async function navigatePanel(id, idNav, option = "", interface = '', isOnpopstat
     $('#' + idNav).addClass("active");
 
     if (id == 'resource-center-classroom') {
-        $('#classroom-dashboard-activities-panel-library-teacher').html('<iframe id="resource-center-classroom" src="/learn/?use=classroom" frameborder="0" style="height:80vh;width:80vw"></iframe>');
+        $('#classroom-dashboard-activities-panel-library-teacher').html('<iframe id="resource-center-classroom" src="/learn/?use=classroom" frameborder="0" style="height:80vh;width:80vw" title="Centre de ressources - Bibliothèque d\'activités"></iframe>');
     }
 
     ClassroomSettings.lastPage.unshift({
@@ -437,7 +480,7 @@ window.addEventListener('storage', () => {
     try {
         addProjectInList(JSON.parse(window.localStorage.saveProject))
         delete window.localStorage.saveProject
-    } catch (e) {}
+    } catch (e) { }
 })
 
 //profil prof-->paramètres
@@ -520,19 +563,19 @@ $('body').on('click', '.modal-teacherSandbox-delete', function () {
 //increment counter when selecting student
 document.addEventListener('change', (e) => {
     if (e.target.classList.contains('student-id') || e.target.classList.contains('list-students-classroom')) {
-        let selectedStudentNumber = 0, 
-        studentCheckboxesElts = document.querySelectorAll('#list-student-attribute-modal .student-id');
+        let selectedStudentNumber = 0,
+            studentCheckboxesElts = document.querySelectorAll('#list-student-attribute-modal .student-id');
 
         for (let checkboxElt of studentCheckboxesElts) {
             if (checkboxElt.checked) {
                 selectedStudentNumber++;
-            } 
+            }
         }
 
         document.querySelector('#assign-total-student-number').innerHTML = selectedStudentNumber.toString();
         document.querySelector('#assign-total-student-number-course').innerHTML = selectedStudentNumber.toString();
         document.querySelector('#attribuate-student-number').innerText = selectedStudentNumber;
-        
+
         if (selectedStudentNumber > 0) {
             document.querySelector('#attribute-activity-to-students').removeAttribute('disabled');
             document.querySelector('#attribute-course-to-students').removeAttribute('disabled');
@@ -717,8 +760,8 @@ function studentActivitiesDisplay() {
 
     Main.getClassroomManager()._myCourses.forEach(course => {
         let today = new Date(),
-            dateBegin = new Date(course.dateBegin.date),
-            dateEnd = new Date(course.dateEnd.date);
+            dateBegin = course.dateBegin ? new Date(course.dateBegin.date) : null,
+            dateEnd = course.dateEnd ? new Date(course.dateEnd.date) : null;
 
         if (dateBegin && (today < dateBegin || dateEnd < today) && dateBegin != null && dateEnd != null) {
             return;
@@ -732,17 +775,17 @@ function studentActivitiesDisplay() {
         });
 
         if (course.courseState == 999) {
-            let number = $('.section-done .resource-number').html();
-            $('.section-done .resource-number').html(parseInt(number) + 1);
-            $('#done-activities-list').append(courseItem(course, "doneActivities"));
+            let doneNumberElement = document.querySelector('.section-done .resource-number');
+            doneNumberElement.textContent = (parseInt(doneNumberElement.textContent) + 1).toString();
+            document.querySelector('#done-activities-list').innerHTML += courseItem(course, "doneActivities");
         } else if ((course.courseState == 0 && course.activities[0].response != null) || course.courseState > 0 && course.courseState != 999 && saveCourse) {
-            let number = $('.section-saved .resource-number').html();
-            $('.section-saved .resource-number').html(parseInt(number) + 1)
-            $('#saved-activities-list').append(courseItem(course, "currentActivities"));
+            let savedNumberElement = document.querySelector('.section-saved .resource-number');
+            savedNumberElement.textContent = (parseInt(savedNumberElement.textContent) + 1).toString();
+            document.querySelector('#saved-activities-list').innerHTML += courseItem(course, "currentActivities");
         } else if (course.courseState == 0 || !saveCourse) {
-            let number = $('.section-new .resource-number').html();
-            $('.section-new .resource-number').html(parseInt(number) + 1)
-            $('#new-activities-list').append(courseItem(course, "newActivities"));
+            let newNumberElement = document.querySelector('.section-new .resource-number');
+            newNumberElement.textContent = (parseInt(newNumberElement.textContent) + 1).toString();
+            document.querySelector('#new-activities-list').innerHTML += courseItem(course, "newActivities");
         }
     });
 
@@ -775,7 +818,7 @@ function manageToggleForStudentPanel() {
     if ($('.section-saved .resource-number').html() > 0) {
         if ($('#saved-activities-list').css("display") == 'none') {
             sectionToggle('saved')
-        }  
+        }
     }
     if ($('.section-current .resource-number').html() > 0) {
         if ($('#current-activities-list').css("display") == 'none') {
@@ -850,9 +893,9 @@ function classroomsDisplay() {
         } else {
             $('.list-classes').append(noContentDiv).localize();
 
-            
 
-            if (typeof Main.leaderline === 'undefined'){
+
+            if (typeof Main.leaderline === 'undefined') {
                 const startAttachment = LeaderLine.pointAnchor({
                     element: document.getElementById('no-content-div__bottom-text'),
                     x: -10,
@@ -895,9 +938,9 @@ function teacherActivitiesDisplay(list = Main.getClassroomManager()._myTeacherAc
         sortedList = "";
 
     if (selectedSort == "desc" || selectedSort == "asc") {
-        sortedList = $("#filter-activity-select").val() != "desc" ? list.sort((a, b) => {return b.id - a.id}) : list;
+        sortedList = $("#filter-activity-select").val() != "desc" ? list.sort((a, b) => { return b.id - a.id }) : list;
     } else if (selectedSort == "alph" || selectedSort == "ralph") {
-        sortedList = $("#filter-activity-select").val() == "alph" ? list.sort((a, b) => a.title.localeCompare(b.title)) : list.sort((a, b) => -1 * a.title.localeCompare(b.title)); 
+        sortedList = $("#filter-activity-select").val() == "alph" ? list.sort((a, b) => a.title.localeCompare(b.title)) : list.sort((a, b) => -1 * a.title.localeCompare(b.title));
     }
 
     let displayStyle = Main.getClassroomManager().displayMode;
@@ -911,7 +954,7 @@ function teacherActivitiesDisplay(list = Main.getClassroomManager()._myTeacherAc
 
     // Add sorting to the folders
     let foldersZ = keyword ? filterTeacherFolderInList(keyword, asc) : foldersManager.userFolders;
-    if (!excludedObjects.includes("folders")){
+    if (!excludedObjects.includes("folders")) {
         foldersZ.forEach(folder => {
             if (folder.parentFolder == null && foldersManager.actualFolder == null) {
                 $('#list-activities-teacher').append(teacherFolder(folder, displayStyle));
@@ -922,7 +965,7 @@ function teacherActivitiesDisplay(list = Main.getClassroomManager()._myTeacherAc
             }
         });
     }
-    
+
     sortedList.forEach(element => {
         if (element.folder == null && foldersManager.actualFolder == null) {
             $('#list-activities-teacher').append(teacherActivityItem(element, displayStyle));
@@ -936,10 +979,10 @@ function teacherActivitiesDisplay(list = Main.getClassroomManager()._myTeacherAc
     if (!excludedObjects.includes("courses")) {
         coursesManager.myCourses.forEach(course => {
             if (course.folder == null && foldersManager.actualFolder == null) {
-                $('#list-activities-teacher').append(coursesManager.teacherCourseItem(course, displayStyle)); 
+                $('#list-activities-teacher').append(coursesManager.teacherCourseItem(course, displayStyle));
             } else if (course.folder != null) {
                 if (course.folder.id == foldersManager.actualFolder) {
-                    $('#list-activities-teacher').append(coursesManager.teacherCourseItem(course, displayStyle)); 
+                    $('#list-activities-teacher').append(coursesManager.teacherCourseItem(course, displayStyle));
                 }
             }
         });
@@ -983,7 +1026,7 @@ function toggleBlockClass() {
         $('#classroom-info > *:not(#blocking-class-tooltip)').css('opacity', '1');
         $('#blocking-class-tooltip').tooltip("dispose");
         $('#blocking-class-tooltip').attr("title", i18next.t('classroom.classes.classroomUnlocked')).tooltip();
-        
+
     } else {
         classroom.isBlocked = true;
         $('#blocking-class-tooltip').addClass('greyscale');
@@ -1001,7 +1044,7 @@ function formatDay(da) {
         return "";
     }
     let d = new Date(da.date)
-    let translatedMonth = i18next.t("classroom.activities.month." + parseInt(d.getMonth() + 1) );
+    let translatedMonth = i18next.t("classroom.activities.month." + parseInt(d.getMonth() + 1));
     let numericMonth = d.getMonth() + 1 < 10 ? '0' + (d.getMonth() + 1) : d.getMonth() + 1;
     return d.getDate() + "." + numericMonth + "." + d.getFullYear();
 }
@@ -1149,19 +1192,19 @@ function createGroupWithModal() {
         ApplicationsData = [];
 
     const GlobalRestrictions = [
-            $('#groupe_create_begin_date').val(),
-            $('#groupe_create_end_date').val(),
-            $('#groupe_create_max_students_per_teachers').val(),
-            $('#groupe_create_max_students_per_groups').val(),
-            $('#groupe_create_max_teachers_per_groups').val(),
-            $('#groupe_create_max_class_per_teachers').val()
-        ];
+        $('#groupe_create_begin_date').val(),
+        $('#groupe_create_end_date').val(),
+        $('#groupe_create_max_students_per_teachers').val(),
+        $('#groupe_create_max_students_per_groups').val(),
+        $('#groupe_create_max_teachers_per_groups').val(),
+        $('#groupe_create_max_class_per_teachers').val()
+    ];
 
     $("input:checkbox.form-check-input.app").each(function () {
         const ApplicationTemp = [$(this).val(),
-            $(this).is(':checked'),
-            $('#max_activities_per_groups_' + $(this).val()).val(),
-            $('#max_activities_per_teachers_' + $(this).val()).val()
+        $(this).is(':checked'),
+        $('#max_activities_per_groups_' + $(this).val()).val(),
+        $('#max_activities_per_teachers_' + $(this).val()).val()
         ]
         ApplicationsData.push(ApplicationTemp);
     });
@@ -1238,9 +1281,9 @@ function updateGroupWithModal() {
 
     $("input:checkbox.form-check-input.app").each(function (element) {
         const ApplicationTemp = [$(this).val(),
-            $(this).is(':checked'),
-            $('#max_activities_per_groups_' + $(this).val()).val(),
-            $('#max_activities_per_teachers_' + $(this).val()).val()
+        $(this).is(':checked'),
+        $('#max_activities_per_groups_' + $(this).val()).val(),
+        $('#max_activities_per_teachers_' + $(this).val()).val()
         ]
         ApplicationsData.push(ApplicationTemp);
     });
@@ -1340,7 +1383,7 @@ $('#search_group').click(() => {
     if (name == "") {
         mainManager.getmanagerManager().getAllGroupsInfos(sort, 1, groupsperpage);
     } else {
-        mainManager.getmanagerManager().searchGroup(name, 1, groupsperpage, );
+        mainManager.getmanagerManager().searchGroup(name, 1, groupsperpage,);
     }
 })
 
@@ -1475,7 +1518,7 @@ function updateAppForUser(methodName = "update") {
             maxClassrooms = defaultRestrictions[0].restrictions.maxClassrooms;
 
         if (user[0]) {
-            if (user[0].restrictions.length > 0) { 
+            if (user[0].restrictions.length > 0) {
                 dateBegin = user[0].restrictions[0].date_begin != null ? new Date(user[0].restrictions[0].date_begin).toISOString().split('T')[0] : null;
                 dateEnd = user[0].restrictions[0].date_end != null ? new Date(user[0].restrictions[0].date_end).toISOString().split('T')[0] : null;
                 if (user[0].restrictions[0].max_students != null && user[0].restrictions[0].max_students != undefined) {
@@ -1699,7 +1742,7 @@ function showupdateUserModal(id) {
                                     <select class="form-control" id="update_u_group${i}">
                                     </select>
                                     <div class="input-group-append">
-                                        <div class="input-group-text c-checkbox c-checkbox-grey">
+                                        <div class="input-group-text c-checkbox c-checkbox-grey input-group-selector">
                                             <input class="form-check-input" type="checkbox" id="update_u_is_group_admin${i}">
                                             <label class="form-check-label mx-1" for="update_u_is_group_admin${i}" data-i18n="manager.users.groupAdmin">
                                                 Administrateur du groupe
@@ -1751,7 +1794,7 @@ function showupdateUserModal(id) {
                                 <select class="form-control" id="update_u_group0">
                                 </select>
                                 <div class="input-group-append">
-                                    <div class="input-group-text c-checkbox c-checkbox-grey">
+                                    <div class="input-group-text c-checkbox c-checkbox-grey input-group-selector">
                                         <input class="form-check-input" type="checkbox" id="update_u_is_group_admin0">
                                         <label class="form-check-label mx-1" for="update_u_is_group_admin0" data-i18n="manager.users.groupAdmin">
                                             Administrateur du groupe
@@ -1847,19 +1890,19 @@ function updateUserModal() {
         $school,
         $is_active,
         JSON.stringify($ApplicationFromGroup)).then((response) => {
-        if (response.message == "success") {
-            displayNotification('#notif-div', "manager.users.userUpdated", "success");
-            persistUpdateUserApp();
-        } else if (response.message == "missing data") {
-            displayNotification('#notif-div', "manager.account.missingData", "error");
-        } else if (response.response == false) {
-            displayNotification('#notif-div', "manager.group.groupFull", "error");
-        } else if (response.message == "maxStudentsFromTeacher") {
-            displayNotification('#notif-div', "manager.group.toManyStudentsFromTheTeacher", "error");
-        } else if (response.message = "maxStudentsInGroup") {
-            displayNotification('#notif-div', "manager.group.toManyStudentsInGroup", "error");
-        }
-    });
+            if (response.message == "success") {
+                displayNotification('#notif-div', "manager.users.userUpdated", "success");
+                persistUpdateUserApp();
+            } else if (response.message == "missing data") {
+                displayNotification('#notif-div', "manager.account.missingData", "error");
+            } else if (response.response == false) {
+                displayNotification('#notif-div', "manager.group.groupFull", "error");
+            } else if (response.message == "maxStudentsFromTeacher") {
+                displayNotification('#notif-div', "manager.group.toManyStudentsFromTheTeacher", "error");
+            } else if (response.message = "maxStudentsInGroup") {
+                displayNotification('#notif-div', "manager.group.toManyStudentsInGroup", "error");
+            }
+        });
 }
 
 
@@ -1885,12 +1928,12 @@ function createUserAndLinkToGroup() {
         ];
 
 
-    $(`input[id^="create_application_"]`).each(function() {
+    $(`input[id^="create_application_"]`).each(function () {
         let appData = [];
         let appID = $(this)[0].id.replace('create_application_', '');
         appData.push($(this).val());
         appData.push($(this).is(':checked'));
-        appData.push($("#create_max_activities_"+appID).val());
+        appData.push($("#create_max_activities_" + appID).val());
         $applications[3].push(appData);
     })
 
@@ -1912,23 +1955,23 @@ function createUserAndLinkToGroup() {
         $teacher_suject,
         $school,
         $applications).then((response) => {
-        if (response.message == "success") {
-            displayNotification('#notif-div', "manager.users.userCreated", "success");
-            if (response.mail == true) {
-                displayNotification('#notif-div', "manager.users.mailSentToUser", "success");
-            } else {
-                displayNotification('#notif-div', "manager.users.mailSentToUser", "error");
+            if (response.message == "success") {
+                displayNotification('#notif-div', "manager.users.userCreated", "success");
+                if (response.mail == true) {
+                    displayNotification('#notif-div', "manager.users.mailSentToUser", "success");
+                } else {
+                    displayNotification('#notif-div', "manager.users.mailSentToUser", "error");
+                }
+                pseudoModal.closeAllModal();
+                tempoAndShowUsersTable()
+            } else if (response.message == "mailAlreadyExist") {
+                displayNotification('#notif-div', "classroom.notif.emailExists", "error");
+            } else if (response.message == "missing data") {
+                displayNotification('#notif-div', "manager.account.missingData", "error");
+            } else if (response.response == false) {
+                displayNotification('#notif-div', "manager.group.groupFull", "error");
             }
-            pseudoModal.closeAllModal();
-            tempoAndShowUsersTable()
-        } else if (response.message == "mailAlreadyExist") {
-            displayNotification('#notif-div', "classroom.notif.emailExists", "error");
-        } else if (response.message == "missing data") {
-            displayNotification('#notif-div', "manager.account.missingData", "error");
-        } else if (response.response == false) {
-            displayNotification('#notif-div', "manager.group.groupFull", "error");
-        }
-    });
+        });
     pseudoModal.closeAllModal();
     tempoAndShowUsersTable()
 }
@@ -2354,109 +2397,141 @@ $('#dashboard-groupadmin-apps').click(() => {
     getGroupMonitoring();
 })
 
-function showupdateUserModal_groupadmin(user_id) {
-    let $groups = mainGroupAdmin.getGroupAdminManager()._comboGroups;
-    mainGroupAdmin.getGroupAdminManager()._updatedUserGroup = 0;
-    mainGroupAdmin.getGroupAdminManager().getUserInfoWithHisGroups(user_id).then(function (res) {
-        if (res.message != "not_allowed") {
-            $("#update_actualgroup_ga").html("");
-            $('#update_applications_ga').html("");
-            pseudoModal.openModal('groupadmin-update-user');
-            $('#update_u_firstname_ga').val(res[0].firstname);
-            $('#update_u_surname_ga').val(res[0].surname);
-            $('#update_u_pseudo_ga').val(res[0].pseudo);
-            $('#update_u_id_ga').val(res[0].id);
+function showUpdateUserModalGroupAdmin(user_id) {
+    const groupAdminManager = mainGroupAdmin.getGroupAdminManager();
+    const groups = groupAdminManager._comboGroups;
+    groupAdminManager._updatedUserGroup = 0;
 
-            $('#update_u_bio_ga').val(res[0].bio);
-            $('#update_u_mail_ga').val(res[0].email);
-            $('#update_u_phone_ga').val(res[0].telephone);
-
-            let html = "";
-            html += "<label class='form-check-label font-weight-bold mb-1' style='color: var(--classroom-primary)' data-i18n='manager.profil.groupsApps'>Applications</label>";
-            mainGroupAdmin.getGroupAdminManager()._comboGroups.forEach(element => {
-                if (element.id == mainGroupAdmin.getGroupAdminManager()._actualGroup) {
-                    if (element.hasOwnProperty('applications')) {
-                        element.applications.forEach(application => {
-                            let checked = ""
-                            if (res[0].hasOwnProperty("applications_from_groups")) {
-                                res[0].applications_from_groups.forEach(element => {
-                                    if (application.id == element.application) {
-                                        checked = "checked";
-                                    }
-                                });
-                            }
-                            html += `<div class="c-checkbox">
-                                <input class="form-check-input" type="checkbox" name="group_app" id="group_app_${application.id}" value="${application.id}" ${checked}>
-                                <label class="form-check-label" for="group_app_${application.id}">
-                                    ${application.name}
-                                </label>
-                            </div>`;
-                        })
-                    }
-                }
-            });
-            $('#update_applications_ga').html(html);
-
-            $('#update_user_teacher_grade_ga').change(() => {
-                switch ($('#update_user_teacher_grade_ga').val()) {
-                    case "0":
-                        createSubjectSelect(getSubjects(0), 3);
-                        break;
-                    case "1":
-                        createSubjectSelect(getSubjects(1), 3);
-                        break;
-                    case "2":
-                        createSubjectSelect(getSubjects(2), 3);
-                        break;
-                    case "3":
-                        createSubjectSelect(getSubjects(3), 3);
-                        break;
-                    case "4":
-                        createSubjectSelect(getSubjects(4), 3);
-                        break;
-                    default:
-                        break;
-                }
-            })
-
-            // Teacher part
-            $('#update_u_school_ga').val(res[0].school);
-            $('#update_user_teacher_grade_ga').val(res[0].grade - 1);
-            $("#update_user_teacher_grade_ga").trigger("change");
-            $('#update_user_teacher_subjects_ga').val(res[0].subject - 1);
-
-            if (res[0].hasOwnProperty('groups')) {
-                for (let i = 0; i < res[0].groups.length; i++) {
-                    mainGroupAdmin.getGroupAdminManager()._updatedUserGroup += 1;
-                    let group = `<div class="form-group c-secondary-form">
-                                    <label for="update_u_group_ga${i}" data-i18n="manager.profil.group">Groupe</label>
-                                    <div class="input-group mb-3" id="update_u_actual_group_ga${i}">
-                                        <select class="form-control" id="update_u_group_ga${i}" disabled>
-                                        </select>
-                                        <div class="input-group-append">
-                                            <div class="input-group-text c-checkbox c-checkbox-grey">
-                                                <input type="checkbox" id="update_u_is_group_admin_ga${i}">
-                                                <label class="form-check mx-1" for="update_u_is_group_admin_ga${i}">
-                                                    Administrateur du groupe
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>`;
-                    //flag
-                    $("#update_actualgroup_ga").append(group);
-                    if (res[0].groups[i].rights == 1) {
-                        $('#update_u_is_group_admin_ga' + i).prop("checked", true);
-                    }
-                    const item_id = 'update_u_group_ga' + i;
-                    appendSelectGroups($groups, item_id);
-                    $('#update_u_group_ga' + i).val(res[0].groups[i].id);
-                }
-            }
-        } else {
+    groupAdminManager.getUserInfoWithHisGroups(user_id).then(function (res) {
+        if (res.message === "not_allowed") {
             displayNotification('#notif-div', "manager.account.notAllowedUpdateUser", "error");
+            return;
+        }
+
+        // Réinitialisation et ouverture de la modale
+        const actualGroupEl = document.getElementById('update_actualgroup_ga');
+        const applicationsEl = document.getElementById('update_applications_ga');
+        if (actualGroupEl) actualGroupEl.innerHTML = "";
+        if (applicationsEl) applicationsEl.innerHTML = "";
+        pseudoModal.openModal('groupadmin-update-user');
+
+        // Remplissage des champs utilisateur en vérifiant que l'élément existe
+        const firstnameEl = document.getElementById('update_u_firstname_ga');
+        if (firstnameEl) firstnameEl.value = res[0].firstname;
+        const surnameEl = document.getElementById('update_u_surname_ga');
+        if (surnameEl) surnameEl.value = res[0].surname;
+        const pseudoEl = document.getElementById('update_u_pseudo_ga');
+        if (pseudoEl) pseudoEl.value = res[0].pseudo;
+        const idEl = document.getElementById('update_u_id_ga');
+        if (idEl) idEl.value = res[0].id;
+        const bioEl = document.getElementById('update_u_bio_ga');
+        if (bioEl) bioEl.value = res[0].bio;
+        const mailEl = document.getElementById('update_u_mail_ga');
+        if (mailEl) mailEl.value = res[0].email;
+        const phoneEl = document.getElementById('update_u_phone_ga');
+        if (phoneEl) phoneEl.value = res[0].telephone;
+
+        // Affichage des applications
+        renderApplications(res[0], groups);
+
+        // Gestion du changement de grade pour afficher les matières associées
+        const teacherGradeEl = document.getElementById('update_user_teacher_grade_ga');
+        if (teacherGradeEl) {
+            teacherGradeEl.onchange = function () {
+                const grade = parseInt(this.value, 10);
+                createSubjectSelect(getSubjects(grade), 3);
+            };
+
+            teacherGradeEl.value = res[0].grade - 1;
+            teacherGradeEl.dispatchEvent(new Event('change'));
+        }
+
+        // Partie enseignant
+        const schoolEl = document.getElementById('update_u_school_ga');
+        if (schoolEl) schoolEl.value = res[0].school;
+        const subjectsEl = document.getElementById('update_user_teacher_subjects_ga');
+        if (subjectsEl) subjectsEl.value = res[0].subject - 1;
+
+        // Affichage des groupes de l'utilisateur
+        renderGroups(res[0]);
+    }).catch(function (error) {
+        console.error("Erreur lors de la récupération des infos utilisateur :", error);
+    });
+}
+
+function renderApplications(userData, groups) {
+    let html = "";
+    let hasApp = false;
+
+    groups.forEach(element => {
+        if (element.id == mainGroupAdmin.getGroupAdminManager()._actualGroup && element.hasOwnProperty('applications')) {
+            element.applications.forEach(application => {
+                hasApp = true;
+                let checked = "";
+                if (userData.hasOwnProperty("applications_from_groups")) {
+                    userData.applications_from_groups.forEach(item => {
+                        if (application.id == item.application) {
+                            checked = "checked";
+                        }
+                    });
+                }
+                html += `
+                    <div class="c-checkbox">
+                        <input class="form-check-input" type="checkbox" name="group_app" id="group_app_${application.id}" value="${application.id}" ${checked}>
+                        <label class="form-check-label" for="group_app_${application.id}">${application.name}</label>
+                    </div>`;
+            });
         }
     });
+
+    const updateAppGa = document.getElementById('update_applications_ga');
+    if (updateAppGa) {
+        if (hasApp) {
+            const title = "<label class='form-check-label font-weight-bold mb-1' style='color: var(--classroom-primary)' data-i18n='manager.profil.groupsApps'>Applications</label>";
+            updateAppGa.innerHTML = title + html;
+        } else {
+            updateAppGa.innerHTML = "";
+        }
+    }
+}
+
+function renderGroups(userData) {
+    const currentUserId = UserManager.getUser().id;
+    const groupsContainer = document.getElementById('update_actualgroup_ga');
+    let updatedUserGroup = 0;
+
+    if (userData.hasOwnProperty('groups') && groupsContainer) {
+        userData.groups.forEach((groupData, i) => {
+            updatedUserGroup++;
+            // Si l'utilisateur connecté est celui dont on affiche les infos, on désactive la modification du statut "group admin"
+            const isCurrentUser = currentUserId == userData.id;
+            const groupHtml = `
+                <div class="form-group c-secondary-form">
+                    <label for="update_u_group_ga${i}" data-i18n="manager.profil.group">Groupe</label>
+                    <div class="input-group mb-3" id="update_u_actual_group_ga${i}">
+                        <select class="form-control" id="update_u_group_ga${i}" disabled></select>
+                        <div class="input-group-append">
+                            <div class="input-group-text c-checkbox c-checkbox-grey input-group-selector">
+                                <input type="checkbox" id="update_u_is_group_admin_ga${i}" ${isCurrentUser ? 'disabled' : ''}>
+                                <label class="form-check mx-1" for="update_u_is_group_admin_ga${i}">Administrateur du groupe</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            groupsContainer.insertAdjacentHTML('beforeend', groupHtml);
+
+            const selectId = 'update_u_group_ga' + i;
+            appendSelectGroups(mainGroupAdmin.getGroupAdminManager()._comboGroups, selectId);
+            const selectEl = document.getElementById(selectId);
+            if (selectEl) selectEl.value = groupData.id;
+
+            const checkboxEl = document.getElementById('update_u_is_group_admin_ga' + i);
+            if (checkboxEl && groupData.rights == 1) {
+                checkboxEl.checked = true;
+            }
+        });
+        mainGroupAdmin.getGroupAdminManager()._updatedUserGroup = updatedUserGroup;
+    }
 }
 
 
@@ -2502,19 +2577,19 @@ function updateUserModalGroupAdmin() {
         $teacher_suject,
         $school,
         JSON.stringify($ApplicationFromGroup)).then((response) => {
-        if (response.message == "success") {
-            displayNotification('#notif-div', "manager.users.userUpdated", "success");
-            pseudoModal.closeAllModal();
-        } else if (response.message == "missing data") {
-            displayNotification('#notif-div', "manager.account.missingData", "error");
-        } else if (response.message == "maxStudentsFromTeacher") {
-            displayNotification('#notif-div', "manager.group.toManyStudentsFromTheTeacher", "error");
-        } else if (response.message == "maxStudentsInGroup") {
-            displayNotification('#notif-div', "manager.group.toManyStudentsInGroup", "error");
-        } else if (response.message == "outDated") {
-            displayNotification('#notif-div', "manager.apps.outDatedApp", "error");
-        }
-    });
+            if (response.message == "success") {
+                displayNotification('#notif-div', "manager.users.userUpdated", "success");
+                pseudoModal.closeAllModal();
+            } else if (response.message == "missing data") {
+                displayNotification('#notif-div', "manager.account.missingData", "error");
+            } else if (response.message == "maxStudentsFromTeacher") {
+                displayNotification('#notif-div', "manager.group.toManyStudentsFromTheTeacher", "error");
+            } else if (response.message == "maxStudentsInGroup") {
+                displayNotification('#notif-div', "manager.group.toManyStudentsInGroup", "error");
+            } else if (response.message == "outDated") {
+                displayNotification('#notif-div', "manager.apps.outDatedApp", "error");
+            }
+        });
     tempoAndShowUsersTableGroupAdmin();
 }
 
@@ -2522,96 +2597,160 @@ $('#users_per_page_groupadmin, #sort_users_filter_groupadmin').change(() => {
     let actualGroup = mainGroupAdmin.getGroupAdminManager()._actualGroup;
     mainGroupAdmin.getGroupAdminManager().getUsersFromGroup(actualGroup, 1);
 })
+// 1. On bind l’événement uniquement si l’élément existe
+const createUserLink = document.getElementById('create_user_link_to_group_groupadmin');
+if (createUserLink) {
+    createUserLink.addEventListener('click', onCreateUserClick);
+}
 
-$('#create_user_link_to_group_groupadmin').click(function () {
-    $('#group_add_ga').html("");
-    $('#u_firstname_ga').val("");
-    $('#u_surname_ga').val("");
-    $('#u_bio_ga').val("");
-    $('#u_mail_ga').val("");
-    $('#u_pseudo_ga').val("");
-    $('#u_phone_ga').val("");
-    $('#u_school_ga').val("");
-    $('#user_teacher_grade_ga').prop('selectedIndex', 0);
-    $('#user_teacher_subjects_ga').prop('selectedIndex', 0);
-    $('#u_is_group_admin_ga').prop("checked", false);
-    $('#create_applications_ga').html("");
+async function onCreateUserClick() {
+    resetForm();
+    const manager = mainGroupAdmin.getGroupAdminManager();
+    const groupId = manager._actualGroup;
+
+    try {
+        const response = await manager.isGroupFull(groupId);
+        if (response.message === 'limit') {
+            displayNotification('#notif-div', 'manager.group.groupFullAdminMessage', 'error');
+            return;
+        }
+        // Ouverture du modal et peuplement des sections
+        pseudoModal.openModal('groupeadmin-create-user');
+        buildGroupSelector();
+        bindGradeChange();
+        // affiche les matières pour le grade 0 par défaut
+        createSubjectSelect(getSubjects(0), 1);
+        buildApplicationsList(groupId);
+    } catch (err) {
+        console.error('Erreur vérif. groupe plein :', err);
+        displayNotification('#notif-div', 'manager.group.checkError', 'error');
+    }
+}
+
+function resetForm() {
+    ['group_add_ga', 'create_applications_ga'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+
+    ['u_firstname_ga', 'u_surname_ga', 'u_bio_ga', 'u_mail_ga', 'u_pseudo_ga', 'u_phone_ga', 'u_school_ga'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    ['user_teacher_grade_ga', 'user_teacher_subjects_ga'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) sel.selectedIndex = 0;
+    });
+
+    const chk = document.getElementById('u_is_group_admin_ga');
+    if (chk) chk.checked = false;
 
     mainGroupAdmin.getGroupAdminManager()._addedCreateUserGroup = 0;
-    const groupId = mainGroupAdmin.getGroupAdminManager()._actualGroup;
-    // If the group is full, we notify the group administrator otherwise open the modal
-    mainGroupAdmin.getGroupAdminManager().isGroupFull(groupId).then((response) => {
-        if (response.message == "limit") {
-            displayNotification('#notif-div', "manager.group.groupFullAdminMessage", "error");
-        } else {
-            pseudoModal.openModal('groupeadmin-create-user');
-            // Bind functions to the selects who has been created
-            $saved_groups = mainGroupAdmin.getGroupAdminManager()._comboGroups;
-            let radioHTML = "";
+}
 
+function buildGroupSelector() {
+    const manager = mainGroupAdmin.getGroupAdminManager();
+    const comboGroups = manager._comboGroups;
+    const container = document.getElementById('allGroupsGA');
+    if (!container) return;
 
-            $saved_groups.forEach(element => {
-                radioHTML += `<div class="form-group c-secondary-form">
-                                <label for="create_u_group_ga" data-i18n="manager.profil.group">Groupe</label>
-                                <div class="input-group mb-3" id="create_u_actual_group_ga">
-                                    <select class="form-control" id="create_u_group_ga" disabled>
-                                        <option value="${element.id}">${element.name}</option></select>
-                                    <div class="input-group-append">
-                                        <div class="input-group-text c-checkbox c-checkbox-grey">
-                                            <input type="checkbox" id="checkboxAdmin">
-                                            <label class="form-check mx-1" for="checkboxAdmin">
-                                                Administrateur du groupe
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>`;
-            });
-            $('#allGroupsGA').html(radioHTML);
+    container.innerHTML = '';
+    const frag = document.createDocumentFragment();
 
-            $('#user_teacher_grade_ga').change(() => {
-                switch ($('#user_teacher_grade_ga').val()) {
-                    case "0":
-                        createSubjectSelect(getSubjects(0), 1);
-                        break;
-                    case "1":
-                        createSubjectSelect(getSubjects(1), 1);
-                        break;
-                    case "2":
-                        createSubjectSelect(getSubjects(2), 1);
-                        break;
-                    case "3":
-                        createSubjectSelect(getSubjects(3), 1);
-                        break;
-                    case "4":
-                        createSubjectSelect(getSubjects(4), 1);
-                        break;
-                    default:
-                        break;
-                }
-            })
-            createSubjectSelect(getSubjects(0), 1);
+    comboGroups.forEach(group => {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('form-group', 'c-secondary-form');
 
-            let html = "";
-            html += "<label class='form-check-label font-weight-bold mb-1' style='color: var(--classroom-primary)' data-i18n='manager.profil.groupsApps'>Applications</label>";
-            mainGroupAdmin.getGroupAdminManager()._comboGroups.forEach(element => {
-                if (element.id == mainGroupAdmin.getGroupAdminManager()._actualGroup) {
-                    if (element.hasOwnProperty('applications')) {
-                        element.applications.forEach(application => {
-                            html += `<div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="create_group_app" id="group_app_${application.id}" value="${application.id}">
-                                <label class="form-check" for="group_app_${application.id}">
-                                    ${application.name}
-                                </label>
-                            </div>`;
-                        })
-                    }
-                }
-            });
-            $('#create_applications_ga').html(html);
-        }
-    })
-});
+        const label = document.createElement('label');
+        label.setAttribute('data-i18n', 'manager.profil.group');
+        label.innerText = 'Groupe';
+
+        const inputGroup = document.createElement('div');
+        inputGroup.classList.add('input-group', 'mb-3');
+
+        const select = document.createElement('select');
+        select.classList.add('form-control');
+        select.disabled = true;
+        select.id = 'create_u_group_ga';
+        const option = document.createElement('option');
+        option.value = group.id;
+        option.textContent = group.name;
+        select.appendChild(option);
+
+        const appendDiv = document.createElement('div');
+        appendDiv.classList.add('input-group-append');
+        const checkboxWrapper = document.createElement('div');
+        checkboxWrapper.classList.add('input-group-text', 'c-checkbox', 'c-checkbox-grey', 'input-group-selector');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'checkboxAdmin';
+        checkbox.dataset.groupId = group.id;
+        const checkboxLabel = document.createElement('label');
+        checkboxLabel.classList.add('form-check', 'mx-1');
+        checkboxLabel.setAttribute('for', 'checkboxAdmin');
+        checkboxLabel.innerText = 'Administrateur du groupe';
+
+        checkboxWrapper.appendChild(checkbox);
+        checkboxWrapper.appendChild(checkboxLabel);
+        appendDiv.appendChild(checkboxWrapper);
+        inputGroup.appendChild(select);
+        inputGroup.appendChild(appendDiv);
+        wrapper.appendChild(label);
+        wrapper.appendChild(inputGroup);
+        frag.appendChild(wrapper);
+    });
+
+    container.appendChild(frag);
+}
+
+function bindGradeChange() {
+    const gradeSelect = document.getElementById('user_teacher_grade_ga');
+    if (!gradeSelect) return;
+
+    gradeSelect.addEventListener('change', () => {
+        const grade = Number(gradeSelect.value) || 0;
+        createSubjectSelect(getSubjects(grade), 1);
+    });
+}
+
+function buildApplicationsList(actualGroupId) {
+    const manager = mainGroupAdmin.getGroupAdminManager();
+    const group = manager._comboGroups.find(g => g.id === actualGroupId);
+    const container = document.getElementById('create_applications_ga');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (!group || !group.applications) return;
+
+    const title = document.createElement('label');
+    title.classList.add('form-check-label', 'font-weight-bold', 'mb-1');
+    title.style.color = 'var(--classroom-primary)';
+    title.setAttribute('data-i18n', 'manager.profil.groupsApps');
+    title.innerText = 'Applications';
+    container.appendChild(title);
+
+    const frag = document.createDocumentFragment();
+    group.applications.forEach(app => {
+        const div = document.createElement('div');
+        div.classList.add('form-check');
+        const input = document.createElement('input');
+        input.classList.add('form-check-input');
+        input.type = 'checkbox';
+        input.name = 'create_group_app';
+        input.id = `group_app_${app.id}`;
+        input.value = app.id;
+        const label = document.createElement('label');
+        label.classList.add('form-check');
+        label.setAttribute('for', `group_app_${app.id}`);
+        label.innerText = app.name;
+        div.appendChild(input);
+        div.appendChild(label);
+        frag.appendChild(div);
+    });
+    container.appendChild(frag);
+}
+
 
 function createUserAndLinkToGroup_groupAdmin() {
     let $firstname = $('#u_firstname_ga').val(),
@@ -2834,7 +2973,7 @@ function showMonitoring(data) {
         if (data.outDated == 0) {
             outDatedString = i18next.t('manager.apps.appStatus0');
         } else if (data.outDated == 1) {
-            outDatedString = i18next.t('manager.apps.appStatus1');  
+            outDatedString = i18next.t('manager.apps.appStatus1');
         } else if (data.outDated == 2) {
             outDatedString = i18next.t('manager.apps.appStatus2');
         }
@@ -2848,7 +2987,7 @@ function showMonitoring(data) {
                         <td>${data.maxTeachers}</td>
                         <td>${data.groupTotalTeachers}</td>
                         <td>${data.maxStudentsPerTeacher}</td>`;
-                        
+
         data.applications.forEach(app => {
             html += `<tr>
                         <td>${app.name}</td>
@@ -2946,7 +3085,7 @@ function getAndShowApps() {
 
             let divImg = "";
             if (application.image != null && application.image != "") {
-                divImg = `<img src="${application.image}" class="app_image_preview">`
+                divImg = `<img src="${application.image}" class="app_image_preview" alt="Icône de l'application ${application.name}">`
             } else {
                 divImg = "None";
             }
@@ -2957,10 +3096,10 @@ function getAndShowApps() {
                             <td>${application.description}</td>
                             <td>${application.max_per_teachers}</td>
                             <td>
-                                <a class="c-link-secondary" href="javascript:void(0)" onclick="updateApp(${application.id})"><i class="fas fa-pencil-alt fa-2x"></i></a>
+                                <a class="c-link-secondary" href="javascript:void(0)" onclick="updateApp(${application.id})" aria-label="Modifier l'application ${application.name}"><i class="fas fa-pencil-alt fa-2x" aria-hidden="true"></i></a>
                             </td>
                             <td>
-                                <a class="c-link-red" href="javascript:void(0)" onclick="deleteApp(${application.id}, '${application.name}')"><i class="fas fa-trash-alt fa-2x"></i></a>
+                                <a class="c-link-red" href="javascript:void(0)" onclick="deleteApp(${application.id}, '${application.name}')" aria-label="Supprimer l'application ${application.name}"><i class="fas fa-trash-alt fa-2x" aria-hidden="true"></i></a>
                             </td>
                         </tr>`;
         });
@@ -3003,19 +3142,18 @@ function checkLtiFields(type) {
     if (type == 'create') {
         if ($('#isLti').is(":checked")) {
             if (
-                $('#clientId').val() == "" || 
-                $('#deploymentId').val() == "" || 
-                $('#toolUrl').val() == "" || 
-                $('#publicKeySet').val() == "" || 
-                $('#loginUrl').val() == "" || 
-                $('#redirectionUrl').val() == "" || 
-                $('#deepLinkUrl').val() == "" || 
-                $('#privateKey').val() == "") 
-            {
-                return {isLti : false};
+                $('#clientId').val() == "" ||
+                $('#deploymentId').val() == "" ||
+                $('#toolUrl').val() == "" ||
+                $('#publicKeySet').val() == "" ||
+                $('#loginUrl').val() == "" ||
+                $('#redirectionUrl').val() == "" ||
+                $('#deepLinkUrl').val() == "" ||
+                $('#privateKey').val() == "") {
+                return { isLti: false };
             } else {
                 return {
-                    isLti : true,
+                    isLti: true,
                     clientId: $('#clientId').val(),
                     deploymentId: $('#deploymentId').val(),
                     toolUrl: $('#toolUrl').val(),
@@ -3030,19 +3168,19 @@ function checkLtiFields(type) {
     } else if (type == 'update') {
         if ($('#update_isLti').is(":checked")) {
             if (
-                $('#update_clientId').val() == "" || 
-                $('#update_deploymentId').val() == "" || 
-                $('#update_toolUrl').val() == "" || 
-                $('#update_publicKeySet').val() == "" || 
-                $('#update_loginUrl').val() == "" || 
-                $('#update_redirectionUrl').val() == "" || 
-                $('#update_deepLinkUrl').val() == "" || 
+                $('#update_clientId').val() == "" ||
+                $('#update_deploymentId').val() == "" ||
+                $('#update_toolUrl').val() == "" ||
+                $('#update_publicKeySet').val() == "" ||
+                $('#update_loginUrl').val() == "" ||
+                $('#update_redirectionUrl').val() == "" ||
+                $('#update_deepLinkUrl').val() == "" ||
                 $('#update_privateKey').val() == ""
             ) {
-                return {isLti : false};
+                return { isLti: false };
             } else {
                 let lti = {
-                    isLti : true,
+                    isLti: true,
                     clientId: $('#update_clientId').val(),
                     deploymentId: $('#update_deploymentId').val(),
                     toolUrl: $('#update_toolUrl').val(),
@@ -3056,7 +3194,7 @@ function checkLtiFields(type) {
             }
         }
     }
-    return {isLti : false};
+    return { isLti: false };
 }
 
 function updateApp(app_id) {
@@ -3119,17 +3257,17 @@ function persistUpdateApp() {
             $application_color,
             $application_restrictions_value,
             $application_sort_index).then((response) => {
-            if (response.message == "success") {
-                displayNotification('#notif-div', "manager.apps.updateSuccess", "success");
-                closeModalAndCleanInput(true);
-            } else {
-                if (response.message == "application with the same name already exist") {
-                    displayNotification('#notif-div', "manager.apps.nameAlreadyExist", "error");
+                if (response.message == "success") {
+                    displayNotification('#notif-div', "manager.apps.updateSuccess", "success");
+                    closeModalAndCleanInput(true);
                 } else {
-                    displayNotification('#notif-div', "manager.account.missingData", "error");
-                } 
-            }
-        })
+                    if (response.message == "application with the same name already exist") {
+                        displayNotification('#notif-div', "manager.apps.nameAlreadyExist", "error");
+                    } else {
+                        displayNotification('#notif-div', "manager.account.missingData", "error");
+                    }
+                }
+            })
     }
 }
 
@@ -3162,26 +3300,26 @@ function persistCreateApp() {
         lti = checkLtiFields('create'),
         $application_sort_index = $('#app_create_sort_index').val();
 
-    
+
     if (!lti.isLti && $('#isLti').is(":checked")) {
         displayNotification('#notif-div', "manager.account.missingData", "error");
     } else {
         mainManager.getmanagerManager().createApplication(
-            $application_name, 
-            $application_description, 
-            $application_image, lti, 
-            $application_color, 
+            $application_name,
+            $application_description,
+            $application_image, lti,
+            $application_color,
             $application_restrictions_value,
             $application_sort_index).then((response) => {
-            if (response.message == "success") {
-                displayNotification('#notif-div', "manager.apps.createSuccess", "success");
-                closeModalAndCleanInput(true);
-            } else {
-                displayNotification('#notif-div', "manager.account.missingData", "error");
-            }
-            updateStoredApps();
-        })
-    }   
+                if (response.message == "success") {
+                    displayNotification('#notif-div', "manager.apps.createSuccess", "success");
+                    closeModalAndCleanInput(true);
+                } else {
+                    displayNotification('#notif-div', "manager.account.missingData", "error");
+                }
+                updateStoredApps();
+            })
+    }
 }
 
 /**
@@ -3273,7 +3411,7 @@ function getAllrestrictions() {
                         limitation += `<li> <span class="font-weight-bold">${i18next.t(`manager.table.${key}`)}</span> : ${restriction.restrictions[key]}</li>`;
                     });
                     limitation += `</ul>`;
-                    update = `<a class="c-link-secondary d-inline-block" href="javascript:void(0)" onclick="updateDefaultUsersLimitation()"><i class="fas fa-pencil-alt fa-2x"></i></a>`;
+                    update = `<a class="c-link-secondary d-inline-block" href="javascript:void(0)" onclick="updateDefaultUsersLimitation()" aria-label="Modifier les limitations par défaut des utilisateurs"><i class="fas fa-pencil-alt fa-2x" aria-hidden="true"></i></a>`;
                     break;
                 case 'groupDefaultRestrictions':
                     name = i18next.t(`manager.apps.groupsLimitation`);
@@ -3282,7 +3420,7 @@ function getAllrestrictions() {
                         limitation += `<li> <span class="font-weight-bold">${i18next.t(`manager.table.${key}`)}</span> : ${restriction.restrictions[key]}</li>`;
                     });
                     limitation += `</ul>`;
-                    update = `<a class="c-link-secondary d-inline-block" href="javascript:void(0)" onclick="updateDefaultGroupsLimitation()"><i class="fas fa-pencil-alt fa-2x"></i></a>`;
+                    update = `<a class="c-link-secondary d-inline-block" href="javascript:void(0)" onclick="updateDefaultGroupsLimitation()" aria-label="Modifier les limitations par défaut des groupes"><i class="fas fa-pencil-alt fa-2x" aria-hidden="true"></i></a>`;
                     break;
                 default:
                     break;
@@ -3306,8 +3444,8 @@ function updateDefaultUsersLimitation() {
         Object.keys(response.restrictions).forEach(function (key) {
             html += `<div class="row mt-1 c-secondary-form">`
             html += `<div class="col-md">`
-            html += `<label for="default-users-restrictions-value">${i18next.t(`manager.table.${key}`)}</label>`;
-            html += `<input type="number" class="form-control" id="default-users-restrictions-value-${key}" value="${response.restrictions[key]}">`;
+            html += `<label for="default-users-restrictions-value-${key}">${i18next.t(`manager.table.${key}`)}</label>`;
+            html += `<input type="number" class="form-control" id="default-users-restrictions-value-${key}" value="${response.restrictions[key]}" aria-required="true">`;
             html += `</div>`;
             html += `</div>`;
         });
@@ -3498,9 +3636,9 @@ function activityPreviewToggler() {
 $('#qr-copy').click(() => {
     if ($("#classroom-code-share-qr-code").find("canvas").length > 0) {
         const canvasImg = $("#classroom-code-share-qr-code").find("canvas")[0];
-        canvasImg.toBlob(function(blob) { 
+        canvasImg.toBlob(function (blob) {
             const item = new ClipboardItem({ "image/png": blob });
-            navigator.clipboard.write([item]); 
+            navigator.clipboard.write([item]);
         });
     }
 })
@@ -3520,10 +3658,10 @@ function setCaret(contentId, id) {
 
     const el = $(`#${contentId}`).siblings('.wysibb-text-editor.wysibb-body')[0];
     let range = document.createRange(),
-		    sel = window.getSelection(),
-		    childNote = null;
+        sel = window.getSelection(),
+        childNote = null;
 
-    for(let i = 0; i < el.childNodes.length; i++) {
+    for (let i = 0; i < el.childNodes.length; i++) {
         if ($(el.childNodes[i]).data('id')) {
             if ($(el.childNodes[i]).data('id') == id) {
                 childNote = el.childNodes[i];
@@ -3537,17 +3675,12 @@ function setCaret(contentId, id) {
 
     range.setStart(childNote, 1)
     range.collapse(true)
-    
+
     sel.removeAllRanges()
     sel.addRange(range)
 }
 
-// Set the zindex for the virtual keyboard
 document.body.style.setProperty("--keyboard-zindex", "3000");
-
-
-
-
 
 
 

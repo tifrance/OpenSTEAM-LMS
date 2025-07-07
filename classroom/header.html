@@ -2,6 +2,9 @@
 <html lang="fr">
 
 <head>
+    <script src="accessibility/accessibility.js" type="module"></script>
+    <script src="accessibility/utils.js"></script>
+    <script src="assets/js/scripts/validate-forms.js"></script>
     <script src="assets/js/utils/listener.js"></script>
     <script src="/path.js"></script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -69,8 +72,10 @@
 
             if (localStorage.getItem('theme') === 'dark') {
                 $(".navbar-logo").attr("src", "/public/content/img/vittascience-footer.png");
+                $(".navbar-logo").attr("alt", "Logo Vittascience - thème sombre");
             } else {
                 $(".navbar-logo").attr("src", "/public/content/img/vittascience-logo.png");
+                $(".navbar-logo").attr("alt", "Logo Vittascience - thème clair");
             }
 
             $('#radio-' + givenThemeName + '-theme').prop("checked", true);
@@ -127,7 +132,7 @@
 
         // function to set a given font
         function setFont(givenFontName) {
-            let fontTypes = ['lato', 'dys', 'luciole', 'arial', 'verdana'];
+            let fontTypes = ['basic', 'dys', 'luciole', 'arial', 'verdana'];
 
             localStorage.setItem('font', givenFontName);
 
@@ -189,12 +194,21 @@
                     setFont('verdana');
                     $("#radio-verdana-font, #ide-radio-verdana-font").prop("checked", true);
                 } else {
-                    setFont('lato');
+                    setFont('basic');
                     $("#radio-basic-font, #ide-radio-basic-font").prop("checked", true);
 
                 }
 
             }, 1000);
+
+            // Invisible aria live (for speech feedbacks)
+            const ariaLiveElement = document.createElement("div");
+            ariaLiveElement.id = "a11y-notifier";
+            ariaLiveElement.className = "visually-hidden";
+            ariaLiveElement.setAttribute("aria-live", "polite");
+            ariaLiveElement.setAttribute("aria-atomic", "true");
+
+            document.body.appendChild(ariaLiveElement);
         });
     </script>
     <script src="assets/js/lib/mobile_detect-1.4.2/mobile-detect.min.js"></script>
